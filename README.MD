@@ -34,6 +34,7 @@ We built on the following external resources:
   - `matplotlib`
   - `scipy`
   - `joblib`
+  - `torch`
 
 We also consulted prior March Madness prediction work, including:
 
