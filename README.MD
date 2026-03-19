@@ -2,28 +2,38 @@
 
 **CSC 480 Final Project — Cal Poly San Luis Obispo**  
 **Instructor:** Dr. Rodrigo Canaan  
-**Team Members:** Casey Hartley, Nathan Huang, Vardaan Kumar
+**Team Members:** Nathan Huang, Casey Hartley, Vardaan Kumar
 
 ## Project Overview
 
-This repository contains our CSC 480 project implementation for predicting NCAA March Madness tournament outcomes using machine learning. The project was developed around the Kaggle **March Machine Learning Mania** competition and focuses on predicting matchup win probabilities from historical regular-season and tournament data.
+This repository contains our CSC 480 final project on predicting NCAA March Madness tournament outcomes using machine learning. The main focus of the project was to compete in the Kaggle **March Machine Learning Mania 2026** competition by building models that predict matchup win probabilities from historical regular-season and tournament data.
 
-Our final system builds season-level team features from historical box score statistics, tournament seeds, and Massey rankings, then converts tournament matchups into training instances. We compared multiple models, including Random Forest, XGBoost, and MLP, and found that XGBoost performed best for our final setup.
+Our system builds season-level team features from historical box score statistics, tournament seeds, and Massey rankings, then converts tournament matchups into training examples. We explored three separate modeling approaches: **XGBoost, Random Forest, and MLP**. After generating win probabilities for individual matchups, we extended the project by using those predictions to produce a full tournament bracket.
 
 ## Acknowledgments and External Resources
 
 This project was completed as part of **CSC 480 at Cal Poly**.
 
-We built on the following external resources:
+This project uses data from the Kaggle **March Machine Learning Mania 2026** competition.
 
-- **Kaggle March Machine Learning Mania** competition and datasets
+Jeff Sonas, Martyna Plomecka, Yao Yan, and Addison Howard. *March Machine Learning Mania 2026*. https://kaggle.com/competitions/march-machine-learning-mania-2026, 2026. Kaggle.
+
+The competition datasets are not included in this repository. Users should download the data directly from the official Kaggle competition page after agreeing to the competition rules.
+
+This repository includes only code and documentation. No Kaggle competition data is redistributed here.
+
+### External Resources
+
+We built on the following external resources:
 - **XGBoost** library and the XGBoost paper
 - Python libraries for machine learning and data processing, including:
   - `pandas`
   - `numpy`
   - `scikit-learn`
   - `xgboost`
-  - `matplotlib` (if used for analysis/plots)
+  - `matplotlib`
+  - `scipy`
+  - `joblib`
 
 We also consulted prior March Madness prediction work, including:
 
@@ -34,9 +44,10 @@ We also consulted prior March Madness prediction work, including:
 
 ## Repository Structure
 
-Main scripts in this repository:
-
+### Build Training Table
 - `features.py` — builds team-level and matchup-level features from raw March Madness data
+
+### XGBoost files
 - `train_xgb_win.py` — trains the XGBoost model for win probability prediction
 - `train_xgb_margin.py` — trains the XGBoost model for margin-related prediction
 - `hpt_win.py` — hyperparameter tuning for the win model
@@ -44,67 +55,75 @@ Main scripts in this repository:
 - `submission.py` — generates Kaggle-style prediction outputs
 - `bracket.py` — uses predicted matchup probabilities to generate a tournament bracket
 
+### Random Forest file
+- `random_forest.py` — Random Forest model implementation for tournament prediction
+
+### MLP file
+- - `MMFinal.py` — MLP model implementation for tournament prediction
+
 ## Data Setup
 
 The large Kaggle dataset files are **not included in this repository**. To run the project, download the March Machine Learning Mania data separately and place the CSV files in a local folder such as:
 
+```bash
 mmlm2026/
+```
 
 The project may also create intermediate or output files in a folder such as:
-
+```bash
 data/
-
-Example input files include:
-
-- `MNCAATourneyCompactResults.csv`
-- `MRegularSeasonDetailedResults.csv`
-- `MNCAATourneySeeds.csv`
-- `MMasseyOrdinals.csv`
-
-These are excluded from github because files exceed GitHub's file size limits.
+```
 
 ## Installation
 
 ```bash
 git clone https://github.com/nthuang/march-madness-predictor.git
 cd march-madness-predictor
-
-
-pip install numpy pandas scikit-learn xgboost matplotlib
+pip install numpy pandas scikit-learn xgboost matplotlib scipy joblib torch
 ```
 ## How to Run the Project
 
-### 1. Build features
-Generate season-level team features and matchup-level training data:
+The project includes three separate modeling approaches, so the workflow depends on which model you want to run.
 
-```bash
-
-python features.py
-
-#tune hyperparameters(optional), training already has best parameters set
-python hpt_win.py
-python hpt_margin.py
-
-#train XGBoost models
-python train_xgb_win.py
-python train_xgb_margin.py
-
-#generate predictions
-python submission.py
-
-#generate bracket
-python bracket.py
-```
-## 4. Reproducing Results
-
-The main results in our report were produced using season-based cross-validation, where one full season is held out at a time and the model is trained on the remaining seasons. This evaluation setup better reflects the real task of predicting a future March Madness tournament using only past data.
-
-To reproduce the main workflow:
+### Build features
+Generate the season-level team features and matchup-level training data used by all models:
 
 1. Download the Kaggle competition data
 2. Place the files in `mmlm2026/`
-3. Run `python features.py`
-4. Optionally run hyperparameter tuning with `python hpt_win.py` and `python hpt_margin.py`
-5. Train the final models with `python train_xgb_win.py` and `python train_xgb_margin.py`
-6. Generate predictions with `python submission.py`
-7. Generate a bracket with `python bracket.py`
+3. Run:
+```bash
+python features.py
+```
+
+### Run the XGBoost pipeline
+Optional hyperparameter tuning:
+```bash
+python hpt_win.py
+python hpt_margin.py
+```
+
+Optional standalone training and evaluation:
+```bash
+python train_xgb_win.py
+python train_xgb_margin.py
+```
+
+Generate final matchup predictions:
+```bash
+python submission.py
+```
+
+Generate tournament bracket:
+```bash
+python bracket.py
+```
+
+### Run Random Forest Mode
+```bash
+python random_forest.py
+```
+
+### MLP Model
+```bash
+python MMFinal.py
+```
