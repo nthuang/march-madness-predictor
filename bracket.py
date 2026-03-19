@@ -2,17 +2,20 @@ import pandas as pd
 
 SEASON = 2026
 
+#load data
 M_submission = pd.read_csv("data/2026_submission.csv")
 M_seeds = pd.read_csv("mmlm2026/MNCAATourneySeeds.csv")
 M_slots = pd.read_csv("mmlm2026/MNCAATourneySlots.csv")
 M_teams = pd.read_csv("mmlm2026/MTeams.csv")
 
+#map id to team name
 id_to_name = dict(zip(M_teams["TeamID"], M_teams["TeamName"]))
 
 def parse_id(id):
     s, t1, t2 = id.split("_")
     return int(s), int(t1), int(t2)
 
+#build a lookup table to search prob team smaller id wins
 def build_prob_lookup(sub_df, season):
     sub = sub_df[sub_df["ID"].str.startswith(f"{season}_")].copy()
     probs = {}
@@ -25,6 +28,7 @@ def build_prob_lookup(sub_df, season):
         probs[(a0, b0)] = p if (a < b) else (1.0 - p)
     return probs
 
+#uses lookup table to return the win prob
 def win_prob(team_a, team_b, probs):
     if team_a == team_b:
         return 0.5
@@ -32,12 +36,13 @@ def win_prob(team_a, team_b, probs):
     p_min = probs.get((x, y))
     return p_min if team_a == x else (1.0 - p_min)
 
-def round_number(slot: str) -> int:
+def round_number(slot):
     if slot.startswith("R") and len(slot) >= 2 and slot[1].isdigit():
         return int(slot[1])
     return 0
 
-def most_likely_bracket(season: int, seeds_df, slots_df, sub_df):
+#create bracket advance team with higher win probability
+def most_likely_bracket(season, seeds_df, slots_df, sub_df):
     probs = build_prob_lookup(sub_df, season)
 
     seeds_season = seeds_df[seeds_df["Season"] == season].copy()
@@ -51,12 +56,11 @@ def most_likely_bracket(season: int, seeds_df, slots_df, sub_df):
     slot_winner = {}
     rows = []
 
-    def resolve(ref: str) -> int:
+    def resolve(ref):
         if ref in seed_to_team:
             return int(seed_to_team[ref])
         if ref in slot_winner:
             return int(slot_winner[ref])
-        raise KeyError(f"Cannot resolve '{ref}' (not a seed and no prior slot winner).")
 
     for _, r in slots.iterrows():
         slot = r["Slot"]
@@ -64,8 +68,8 @@ def most_likely_bracket(season: int, seeds_df, slots_df, sub_df):
         a = resolve(r["StrongSeed"])
         b = resolve(r["WeakSeed"])
 
-        p_a = win_prob(a, b, probs)
-        winner = a if p_a >= 0.5 else b
+        prob_a = win_prob(a, b, probs)
+        winner = a if prob_a >= 0.5 else b
         slot_winner[slot] = winner
 
         rows.append({
@@ -76,10 +80,10 @@ def most_likely_bracket(season: int, seeds_df, slots_df, sub_df):
             "TeamB": b,
             "TeamASeed": team_to_seed.get(a, ""),
             "TeamBSeed": team_to_seed.get(b, ""),
-            "P(TeamA wins)": p_a,
+            "P(TeamA wins)": prob_a,
             "Winner": winner,
             "WinnerSeed": team_to_seed.get(winner, ""),
-            "WinnerProb": max(p_a, 1.0 - p_a),
+            "WinnerProb": max(prob_a, 1.0 - prob_a),
         })
 
     games = pd.DataFrame(rows)

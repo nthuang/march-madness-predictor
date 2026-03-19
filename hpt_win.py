@@ -14,6 +14,9 @@ id_cols = ["Season","Team1","Team2","w","margin"]
 
 X_train = train_split.drop(columns=id_cols)
 y_train = train_split["w"].astype(int).values
+
+#use season for leave one group out cross validation
+# each group is a season so each fold leaves out a season
 groups = train_split["Season"].values
 
 X_hold = hold_split.drop(columns=id_cols)
@@ -29,6 +32,8 @@ model = XGBClassifier(
     n_jobs=1,
 )
 
+#Search space for hyperparamter tuning
+#RandomizedSearch CV will test different combination of these parameters
 param_distributions = {
     "n_estimators": [600, 1000, 1500, 2500, 3500],
     "max_depth": [2, 3, 4, 5, 6],
@@ -53,15 +58,19 @@ search = RandomizedSearchCV(
     refit=True,
 )
 
+#run hyperaparamater seach on training years
 search.fit(X_train, y_train, groups=groups)
 
+#average cv brier score
 print("\nBest CV Brier:", -search.best_score_)
 print("Best params:")
 for k, v in search.best_params_.items():
     print(f"  {k}: {v}")
 
 best_model = search.best_estimator_
+#predict on 2025 season
 p_hold = best_model.predict_proba(X_hold)[:, 1] 
 
+#evaluate
 print("\n2025 holdout Brier Score:", brier_score_loss(y_hold, p_hold))
 print("2025 holdout Log Loss:", log_loss(y_hold, p_hold))

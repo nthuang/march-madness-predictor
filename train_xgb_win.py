@@ -4,7 +4,7 @@ import xgboost as xgb
 from sklearn.metrics import log_loss, brier_score_loss
 import matplotlib.pyplot as plt
 
-
+#load data
 df = pd.read_csv("data/M_2025_train_aug.csv")
 
 ID_COLS = ["Season","Team1","Team2","w","margin"]
@@ -30,7 +30,7 @@ xgb_params = {
 }
 
 results = []
-
+#leave one season out cv
 for s in sorted(df["Season"].unique()):
     tr_idx = seasons != s
     va_idx = seasons == s
@@ -60,8 +60,8 @@ for s in sorted(df["Season"].unique()):
         "Log Loss": float(ll)
     })
 
+#results
 results_df = pd.DataFrame(results).sort_values("Season")
 print(results_df.to_string(index=False))
-
 print("\nCV mean LogLoss:", results_df["Log Loss"].mean(skipna=True))
 print("CV mean Brier:  ", results_df["Brier Score"].mean(skipna=True))

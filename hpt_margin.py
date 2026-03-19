@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import xgboost as xgb
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import LeaveOneGroupOut, RandomizedSearchCV
@@ -17,6 +15,9 @@ id_cols = ["Season","Team1","Team2","w","margin"]
 
 X_train = train_split.drop(columns=id_cols)
 y_train = train_split["margin"].astype(int).values
+
+#use season for leave one group out cross validation
+# each group is a season so each fold leaves out a season
 groups = train_split["Season"].values
 
 X_hold = hold_split.drop(columns=id_cols)
@@ -32,6 +33,8 @@ model = XGBRegressor(
     n_jobs=1,
 )
 
+#Search space for hyperparamter tuning
+#RandomizedSearch CV will test different combination of these parameters
 param_distributions = {
     "n_estimators": [600, 1000, 1500, 2500, 3500],
     "max_depth": [2, 3, 4, 5, 6],
@@ -56,16 +59,21 @@ search = RandomizedSearchCV(
     refit=True,
 )
 
+#run hyperaparamater seach on training years
 search.fit(X_train, y_train, groups=groups)
 
+#average cv RSME
 print("\nBest CV RSME:", -search.best_score_)
 print("Best params:")
 for k, v in search.best_params_.items():
     print(f"  {k}: {v}")
 
 best_model = search.best_estimator_
+
+#predict on 2025 season
 m_hold = best_model.predict(X_hold)
 
+#evaluation
 print("\n2025 holdout RMSE: ", np.sqrt(mean_squared_error(y_hold, m_hold)))
 print("2025 holdout MAE: ", mean_absolute_error(y_hold, m_hold))
 

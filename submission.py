@@ -5,6 +5,7 @@ from sklearn.metrics import brier_score_loss, log_loss, accuracy_score
 
 ID_COLS = ["Season", "Team1", "Team2", "w", "margin"]
 
+#best paramters from hyper paramater tuning
 XGB_PARAMS = {
     "objective": "binary:logistic",
     "eval_metric": "logloss",
@@ -20,6 +21,7 @@ XGB_PARAMS = {
     "eta": 0.01,
 }
 
+#XGBoost win probability model
 def fit_winprob_model(train_aug_path, xgb_params):
     df = pd.read_csv(train_aug_path)
 
@@ -35,7 +37,7 @@ def fit_winprob_model(train_aug_path, xgb_params):
         va_idx = seasons == s
 
         dtrain = xgb.DMatrix(X_all.loc[tr_idx], label=y_win[tr_idx], missing=np.nan)
-        dval   = xgb.DMatrix(X_all.loc[va_idx], label=y_win[va_idx], missing=np.nan)
+        dval = xgb.DMatrix(X_all.loc[va_idx], label=y_win[va_idx], missing=np.nan)
 
         bst = xgb.train(
             params=xgb_params,
@@ -76,7 +78,7 @@ def fit_winprob_model(train_aug_path, xgb_params):
 
     return final_bst, list(X_all.columns), final_rounds
 
-
+#generate win probabilities for every possible matchup
 def predict_from_matchup_features(matchup_path, model, feature_cols, num_rounds):
     df = pd.read_csv(matchup_path)
 
@@ -113,6 +115,7 @@ def parse_id(id_str):
     s, t1, t2 = id_str.split("_")
     return int(s), int(t1), int(t2)
 
+#used to create a separate file repalces team id with team names
 def add_names(pred_df, id_to_name, league):
     out = pred_df.copy()
 

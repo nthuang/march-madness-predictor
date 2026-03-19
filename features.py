@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+#load data
 data_dir = "mmlm2026"
 
 M_regular_results = pd.read_csv(f"{data_dir}/MRegularSeasonDetailedResults.csv")
