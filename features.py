@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-#load data
+#load march madness data set form kaggle competition
 data_dir = "mmlm2026"
 
 M_regular_results = pd.read_csv(f"{data_dir}/MRegularSeasonDetailedResults.csv")
@@ -15,6 +15,7 @@ W_seeds = pd.read_csv(f"{data_dir}/WNCAATourneySeeds.csv")
 
 SAMPLE_PATH = f"{data_dir}/SampleSubmissionStage2.csv"
 
+#build tournament labels team 1 always lower id, w = 1 if T1 won w = 0 if T1 lost
 def tourney_labels(tourney_results):
     df = tourney_results[["Season", "WTeamID", "WScore", "LTeamID", "LScore"]].copy()
     df["Team1"] = df[["WTeamID", "LTeamID"]].min(axis=1)
@@ -27,11 +28,13 @@ def tourney_labels(tourney_results):
     ).astype(np.int16)
     return df[["Season", "Team1", "Team2", "w", "margin"]]
 
+#remove region so seed is numeric
 def seed_table(seeds):
     df = seeds[["Season", "TeamID", "Seed"]].copy()
     df["SeedN"] = df["Seed"].str[1:3].astype(int)
     return df[["Season", "TeamID", "SeedN"]]
 
+#use last avaiable massey ranking day
 def massey(massey_df, day_cap=133):
     m = massey_df[massey_df["RankingDayNum"] <= day_cap].copy()
     last_day = m.groupby("Season")["RankingDayNum"].max().reset_index(name="UseDay")
@@ -52,6 +55,9 @@ def massey(massey_df, day_cap=133):
     )
     return out
 
+#turn each regular season game in to 2 rows
+#one from winners perspective and one from losers
+#compute advance stats not avaiable in kaggle dataset
 def team_game_table(regular_season):
     cols = ["Season", "DayNum", "WTeamID", "WScore", "LTeamID", "LScore", 
         "WLoc", "NumOT", "WFGM", "WFGA", "WFGM3", "WFGA3", "WFTM", "WFTA", 
@@ -151,7 +157,7 @@ def team_game_table(regular_season):
 
     tg = pd.concat([w, l], ignore_index=True)
 
-    tg["PtDif"] = tg["Score"] - tg["OppScore"]
+    tg["PointDiff"] = tg["Score"] - tg["OppScore"]
 
     tg["Poss"] = tg["FGA"] - tg["OR"] + tg["TO"] + .44*tg["FTA"]
     tg["OppPoss"] = tg["OppFGA"] - tg["OppOR"] + tg["OppTO"] + 0.44*tg["OppFTA"]
@@ -174,6 +180,7 @@ def team_game_table(regular_season):
 
     return tg
 
+#grop season team rows into season averages
 def team_season_table(team_game_table):
     ts = team_game_table.groupby(["Season", "TeamID"]).agg(
         NumGames = ("DayNum", "count"),
@@ -213,12 +220,12 @@ def team_season_table(team_game_table):
         OppBlk=("OppBlk", "sum"),
         OppPF=("OppPF", "sum"),
 
-        PtDiffMean=("PtDif", "mean"),
+        PointDiffMean=("PointDiff", "mean"),
     ).reset_index()
 
     ts["PtsPerGame"] = ts["PtsSeason"] / ts["NumGames"]
     ts["OppPtsPerGame"] = ts["OppPtsSeason"] / ts["NumGames"]
-    ts["AvgPtDiff"] = ts["PtsPerGame"] - ts["OppPtsPerGame"]
+    ts["AvgPointDiff"] = ts["PtsPerGame"] - ts["OppPtsPerGame"]
     ts["Pace"] = (ts["PossSeason"] + ts["OppPossSeason"]) / (2 * ts["NumGames"])
 
     ts["ORTG"] = 100 * ts["PtsSeason"] /ts["PossSeason"]
@@ -253,7 +260,7 @@ def addprefix(df, prefix):
     return df.rename(columns=rename)
 
 
-
+#double training set swapping team 1 and team 2
 def swap_augment(df):
     swapped = df.copy()
 
@@ -283,6 +290,7 @@ def parse_sample_submission(sample_path, season=2026):
     sub["Team2"] = parts[2].astype(int)  
     return sub[sub["Season"] == season][["ID", "Season", "Team1", "Team2"]].reset_index(drop=True)
 
+#build tournament matchup features for prediction
 def build_matchup_features(sample_df, team_feats, feature_cols):
     t1 = addprefix(team_feats, "T1_")
     t2 = addprefix(team_feats, "T2_")
@@ -311,6 +319,7 @@ def build_matchup_features(sample_df, team_feats, feature_cols):
 
 sample_2026 = parse_sample_submission(SAMPLE_PATH, season=2026)
 
+#main pipeline
 def build_train_aug(
     prefix,
     regular_results,

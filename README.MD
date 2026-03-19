@@ -59,7 +59,7 @@ We also consulted prior March Madness prediction work, including:
 - `random_forest.py` — Random Forest model implementation for tournament prediction
 
 ### MLP file
-- - `MMFinal.py` — MLP model implementation for tournament prediction
+- `MMFinal.py` — MLP model implementation for tournament prediction
 
 ## Data Setup
 
